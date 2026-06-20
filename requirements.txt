@@ -1,0 +1,6 @@
+react-icons
+axios
+zustand
+react-hook-form
+react-hot-toast
+next-auth
