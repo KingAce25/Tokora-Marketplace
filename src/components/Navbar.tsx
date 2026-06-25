@@ -160,129 +160,18 @@ function Toast({ message, onDismiss }: ToastProps) {
   );
 }
 
-// Create modal
-
-function CreateSheet({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
-  if (!open) return null;
-  const options = [
-    { label: "List an Item", emoji: "🏷️" },
-    { label: "Create Auction", emoji: "🔨" },
-    { label: "Bundle Deal", emoji: "📦" },
-    { label: "Flash Sale", emoji: "⚡" },
-  ];
-  return (
-    <>
-      <style>{`
-        @keyframes backdropIn  { from{opacity:0} to{opacity:1} }
-        @keyframes sheetIn     { from{transform:translateY(100%)} to{transform:translateY(0)} }
-        .sheet-bg  { animation: backdropIn .2s ease forwards; }
-        .sheet-box { animation: sheetIn    .32s cubic-bezier(.34,1.2,.64,1) forwards; }
-      `}</style>
-      <div
-        className="sheet-bg"
-        onClick={onClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,.6)",
-          zIndex: 9990,
-          backdropFilter: "blur(4px)",
-        }}
-      />
-      <div
-        className="sheet-box"
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: "#1c1c1e",
-          borderRadius: "20px 20px 0 0",
-          padding: "24px 20px 48px",
-          zIndex: 9991,
-        }}
-      >
-        <div
-          style={{
-            width: 36,
-            height: 4,
-            background: "#3a3a3c",
-            borderRadius: 99,
-            margin: "0 auto 24px",
-          }}
-        />
-        <p
-          style={{
-            color: "#888",
-            fontSize: 11,
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            marginBottom: 16,
-            textAlign: "center",
-          }}
-        >
-          Create Listing
-        </p>
-        <div
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
-        >
-          {options.map((o) => (
-            <button
-              key={o.label}
-              onClick={onClose}
-              style={{
-                background: "#2c2c2e",
-                border: "1px solid #3a3a3c",
-                borderRadius: 14,
-                padding: "18px 12px",
-                color: "#fff",
-                fontSize: 14,
-                fontFamily: "inherit",
-                cursor: "pointer",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 8,
-                transition: "background .15s, transform .12s",
-              }}
-              onPointerDown={(e) =>
-                (e.currentTarget.style.transform = "scale(.96)")
-              }
-              onPointerUp={(e) =>
-                (e.currentTarget.style.transform = "scale(1)")
-              }
-            >
-              <span style={{ fontSize: 28 }}>{o.emoji}</span>
-              <span>{o.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </>
-  );
-}
-
 // Navbar
 
 export default function Navbar() {
   const pathname = usePathname();
   const [pressed, setPressed] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
 
   const showToast = useCallback((msg: string) => setToast(msg), []);
   const dismissToast = useCallback(() => setToast(null), []);
 
-  // Example: intercept wallet if not authenticated
   const handleNavClick = (href: string, label: string) => {
     if (href === "/wallet") {
-      // Replace with real auth check
       const isAuthenticated = false;
       if (!isAuthenticated) {
         showToast("Connect your wallet to continue");
@@ -291,6 +180,8 @@ export default function Navbar() {
     }
     return true;
   };
+
+  const createActive = pathname === "/create";
 
   return (
     <>
@@ -333,9 +224,6 @@ export default function Navbar() {
       {/* Toast notification */}
       {toast && <Toast message={toast} onDismiss={dismissToast} />}
 
-      {/* Create sheet */}
-      <CreateSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
-
       <nav
         style={{
           position: "fixed",
@@ -350,7 +238,6 @@ export default function Navbar() {
           justifyContent: "space-around",
           padding: "10px 4px 20px",
           animation: "navIn .45s cubic-bezier(.34,1.2,.64,1) forwards",
-          // Safe area for iPhone home indicator
           paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))",
         }}
       >
@@ -414,19 +301,16 @@ export default function Navbar() {
           );
         })}
 
-        {/*  Create */}
-        <button
-          onClick={() => setSheetOpen(true)}
+        {/* Create (Now navigates to /create) */}
+        <Link
+          href="/create"
           style={{
             flex: 1,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: 6,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "0",
+            textDecoration: "none",
             WebkitTapHighlightColor: "transparent",
           }}
         >
@@ -459,13 +343,18 @@ export default function Navbar() {
           </span>
           <span
             className="nav-label"
-            style={{ fontSize: 10, color: "#6b6b6b", letterSpacing: "0.02em" }}
+            style={{
+              fontSize: 10,
+              color: createActive ? "#FF6B2C" : "#6b6b6b",
+              fontWeight: createActive ? 600 : 400,
+              letterSpacing: "0.02em",
+            }}
           >
             Create
           </span>
-        </button>
+        </Link>
 
-        {/*Wallet & Profile */}
+        {/* Wallet & Profile */}
         {NAV_ITEMS.slice(2).map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;

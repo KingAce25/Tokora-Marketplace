@@ -272,29 +272,31 @@ function useEventDetail(id: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchEvent = useCallback(() => {
+    let cancelled = false;
     setLoading(true);
     setError(null);
 
-    // ── Replace this block with your real API call ──────────────────────────
-    // fetch(`/api/events/${id}`)
+    // ── Swap this block for your real API call ────────────────────────────────
+    // const controller = new AbortController();
+    // const timeout = setTimeout(() => controller.abort(), 10000);
+    // fetch(`/api/events/${id}`, { signal: controller.signal })
     //   .then(r => {
     //     if (r.status === 404) throw new Error("NOT_FOUND");
     //     if (!r.ok) throw new Error(r.statusText);
     //     return r.json();
     //   })
-    //   .then(data => setEvent(data))
-    //   .catch(e => setError(e.message === "NOT_FOUND" ? "NOT_FOUND" : "Failed to load event. Please try again."))
-    //   .finally(() => setLoading(false));
-    // ────────────────────────────────────────────────────────────────────────
+    //   .then(data => { if (!cancelled) setEvent(data); })
+    //   .catch(e => { if (!cancelled) setError(e.name === "AbortError" ? "Request timed out." : e.message === "NOT_FOUND" ? "NOT_FOUND" : "Failed to load event. Please try again."); })
+    //   .finally(() => { clearTimeout(timeout); if (!cancelled) setLoading(false); });
+    // return () => { cancelled = true; controller.abort(); };
+    // ──────────────────────────────────────────────────────────────────────────
 
     const timer = setTimeout(() => {
+      if (cancelled) return;
       try {
         const data = MOCK_DETAILS[id];
-        if (!data) {
-          setError("NOT_FOUND");
-        } else {
-          setEvent(data);
-        }
+        if (!data) setError("NOT_FOUND");
+        else setEvent(data);
       } catch {
         setError("Failed to load event. Please try again.");
       } finally {
@@ -302,7 +304,10 @@ function useEventDetail(id: string) {
       }
     }, 700);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [id]);
 
   useEffect(() => fetchEvent(), [fetchEvent]);
@@ -374,7 +379,7 @@ function AttendeeAvatar({
 
 function DetailSkeleton({ onBack }: { onBack: () => void }) {
   return (
-    <div className="fixed inset-0 w-full overflow-x-hidden overflow-y-auto bg-[#0f0f0f] text-white pb-25">
+    <div className="relative w-full bg-[#0f0f0f] text-white pb-25">
       {/* Hero */}
       <div className="relative w-full h-65 bg-[#2a2a2a] animate-pulse">
         <button
@@ -434,7 +439,7 @@ function DetailSkeleton({ onBack }: { onBack: () => void }) {
 
 function NotFoundState({ onBack }: { onBack: () => void }) {
   return (
-    <div className="fixed inset-0 w-full bg-[#0f0f0f] text-white flex flex-col items-center justify-center gap-4 px-8 animate-fadeIn">
+    <div className="relative w-full min-h-screen bg-[#0f0f0f] text-white flex flex-col items-center justify-center gap-4 px-8 animate-fadeIn">
       <div className="w-16 h-16 rounded-full bg-[#1e1e1e] flex items-center justify-center">
         <svg
           width="28"
@@ -479,7 +484,7 @@ function ErrorState({
   onBack: () => void;
 }) {
   return (
-    <div className="fixed inset-0 w-full bg-[#0f0f0f] text-white flex flex-col items-center justify-center gap-4 px-8 animate-fadeIn">
+    <div className="relative w-full min-h-screen bg-[#0f0f0f] text-white flex flex-col items-center justify-center gap-4 px-8 animate-fadeIn">
       <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
         <svg
           width="26"
@@ -623,10 +628,9 @@ export default function EventDetailPage() {
   return (
     <div
       className="
-      fixed inset-0 w-full overflow-x-hidden overflow-y-auto
+      relative w-full overflow-x-hidden
       bg-[#0f0f0f] text-white pb-27.5
       font-[system-ui,-apple-system,'Helvetica_Neue',sans-serif]
-      [-webkit-overflow-scrolling:touch]
     "
     >
       {/* ── Hero image ── */}
@@ -636,11 +640,13 @@ export default function EventDetailPage() {
             src={event.imageUrl}
             alt={event.title}
             className="w-full h-full object-cover"
+            width={100}
+            height={100}
           />
         ) : (
           <ImagePlaceholder />
         )}
-        <div className="absolute inset-0 bg-linears-to-t from-[#0f0f0f] via-transparent to-black/20" />
+        <div className="absolute inset-0 bg-linear-to-t from-[#0f0f0f] via-transparent to-black/20" />
         <button
           onClick={handleBack}
           className="absolute top-12 left-4 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform duration-150"
@@ -811,7 +817,7 @@ export default function EventDetailPage() {
           className="mb-4 animate-slideUpFade"
           style={{ animationDelay: "320ms" }}
         >
-          <h2 className="text-[15px] font-bold mb-3">Who&apos;s Going</h2>
+          <h2 className="text-[15px] font-bold mb-3">Who&apoos;s Going</h2>
           <div className="flex items-center gap-3">
             <div className="flex">
               {event.attendeePreview.slice(0, 4).map((a, i) => (
@@ -837,10 +843,10 @@ export default function EventDetailPage() {
         )}
       </div>
 
-      {/* ── CTA ── */}
+      {/* ── Sticky CTA ── */}
       <div
         className="
-        bottom-17 left-0 right-0 px-4 py-3
+        sticky bottom-0 left-0 right-0 px-4 py-3
         bg-linear-to-t from-[#0f0f0f] via-[#0f0f0f]/95 to-transparent
         animate-slideUpFade
       "

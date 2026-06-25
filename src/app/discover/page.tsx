@@ -106,20 +106,26 @@ function useDiscoverEvents(activeFilters: FilterType[], query: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setError(null);
 
-    // Replace with real API call:
+    // ── Swap this block for your real API call ────────────────────────────────
+    // const controller = new AbortController();
+    // const timeout = setTimeout(() => controller.abort(), 10000);
     // const params = new URLSearchParams();
     // activeFilters.forEach(f => params.append("filter", f));
     // if (query) params.set("q", query);
-    // fetch(`/api/discover?${params}`)
+    // fetch(`/api/discover?${params}`, { signal: controller.signal })
     //   .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
-    //   .then(data => setEvents(data.events))
-    //   .catch(e => setError(e.message))
-    //   .finally(() => setLoading(false));
+    //   .then(data => { if (!cancelled) setEvents(data.events ?? []); })
+    //   .catch(e => { if (!cancelled) setError(e.name === "AbortError" ? "Request timed out." : "Failed to load events."); })
+    //   .finally(() => { clearTimeout(timeout); if (!cancelled) setLoading(false); });
+    // return () => { cancelled = true; controller.abort(); };
+    // ──────────────────────────────────────────────────────────────────────────
 
     const timer = setTimeout(() => {
+      if (cancelled) return;
       try {
         let filtered = [...MOCK_EVENTS];
         if (activeFilters.includes("Free"))
@@ -147,7 +153,10 @@ function useDiscoverEvents(activeFilters: FilterType[], query: string) {
       }
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [activeFilters, query]);
 
   return { events, loading, error };
@@ -222,8 +231,6 @@ function GridEventCard({
             src={event.imageUrl}
             alt={event.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            width={100}
-            height={130}
           />
         ) : (
           <ImagePlaceholder />
@@ -367,10 +374,9 @@ export default function DiscoverPage() {
   return (
     <div
       className="
-      fixed inset-0
-      w-full overflow-x-hidden overflow-y-auto
+      relative w-full
       bg-[#0f0f0f] text-white
-      pb-25
+      pb-20
       font-[system-ui,-apple-system,'Helvetica_Neue',sans-serif]
       [-webkit-overflow-scrolling:touch]
     "

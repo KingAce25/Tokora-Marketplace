@@ -1,3 +1,4 @@
+// 📁 FILE LOCATION: app/tickets/[id]/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -104,22 +105,27 @@ function useTicket(id: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchTicket = useCallback(() => {
+    let cancelled = false;
     setLoading(true);
     setError(null);
 
-    // ── Replace with your real API call ──────────────────────────────────────
-    // fetch(`/api/tickets/${id}`)
+    // ── Swap this block for your real API call ────────────────────────────────
+    // const controller = new AbortController();
+    // const timeout = setTimeout(() => controller.abort(), 10000);
+    // fetch(`/api/tickets/${id}`, { signal: controller.signal })
     //   .then(r => {
     //     if (r.status === 404) throw new Error("NOT_FOUND");
     //     if (!r.ok) throw new Error(r.statusText);
     //     return r.json();
     //   })
-    //   .then(data => setTicket(data))
-    //   .catch(e => setError(e.message === "NOT_FOUND" ? "NOT_FOUND" : "Failed to load ticket. Please try again."))
-    //   .finally(() => setLoading(false));
+    //   .then(data => { if (!cancelled) setTicket(data); })
+    //   .catch(e => { if (!cancelled) setError(e.name === "AbortError" ? "Request timed out." : e.message === "NOT_FOUND" ? "NOT_FOUND" : "Failed to load ticket. Please try again."); })
+    //   .finally(() => { clearTimeout(timeout); if (!cancelled) setLoading(false); });
+    // return () => { cancelled = true; controller.abort(); };
     // ──────────────────────────────────────────────────────────────────────────
 
     const timer = setTimeout(() => {
+      if (cancelled) return;
       try {
         const data = getOrCreateMockTicket(id);
         if (!data) setError("NOT_FOUND");
@@ -131,7 +137,10 @@ function useTicket(id: string) {
       }
     }, 600);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [id]);
 
   useEffect(() => fetchTicket(), [fetchTicket]);
@@ -231,7 +240,7 @@ function VerifiedBadge({ verifiedAt }: { verifiedAt?: string }) {
 
 function TicketSkeleton({ onClose }: { onClose: () => void }) {
   return (
-    <div className="fixed inset-0 w-full overflow-x-hidden overflow-y-auto bg-[#0f0f0f] text-white">
+    <div className="relative w-full bg-[#0f0f0f] text-white">
       <div className="px-4 pt-12 pb-2 text-center">
         <div className="h-7 w-40 bg-[#1e1e1e] rounded-lg mx-auto animate-pulse mb-2" />
         <div className="h-3.5 w-56 bg-[#1e1e1e] rounded-lg mx-auto animate-pulse" />
@@ -269,7 +278,7 @@ function TicketSkeleton({ onClose }: { onClose: () => void }) {
 
 function NotFoundState({ onClose }: { onClose: () => void }) {
   return (
-    <div className="fixed inset-0 w-full bg-[#0f0f0f] text-white flex flex-col items-center justify-center gap-4 px-8 animate-fadeIn">
+    <div className="relative w-full min-h-screen bg-[#0f0f0f] text-white flex flex-col items-center justify-center gap-4 px-8 animate-fadeIn">
       <div className="w-16 h-16 rounded-full bg-[#1e1e1e] flex items-center justify-center">
         <svg
           width="28"
@@ -312,7 +321,7 @@ function ErrorState({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 w-full bg-[#0f0f0f] text-white flex flex-col items-center justify-center gap-4 px-8 animate-fadeIn">
+    <div className="relative w-full min-h-screen bg-[#0f0f0f] text-white flex flex-col items-center justify-center gap-4 px-8 animate-fadeIn">
       <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
         <svg
           width="26"
@@ -328,9 +337,7 @@ function ErrorState({
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <p className="text-[#6b6b6b] text-sm text-center max-w-[240px]">
-        {message}
-      </p>
+      <p className="text-[#6b6b6b] text-sm text-center max-w-60">{message}</p>
       <div className="flex gap-3 mt-1">
         <button
           onClick={onClose}
@@ -408,10 +415,9 @@ export default function TicketReceiptPage() {
   return (
     <div
       className="
-      fixed inset-0 w-full overflow-x-hidden overflow-y-auto
+      relative w-full overflow-x-hidden
       bg-[#0f0f0f] text-white pb-10
       font-[system-ui,-apple-system,'Helvetica_Neue',sans-serif]
-      [-webkit-overflow-scrolling:touch]
     "
     >
       {/* ── Header ── */}
@@ -431,14 +437,12 @@ export default function TicketReceiptPage() {
       >
         <div className="rounded-3xl overflow-hidden bg-[#1a1a1a] border border-white/8 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
           {/* Event image */}
-          <div className="relative w-full h-[140px] overflow-hidden">
+          <div className="relative w-full h-35 overflow-hidden">
             {ticket.eventImageUrl ? (
               <Image
                 src={ticket.eventImageUrl}
                 alt={ticket.eventTitle}
                 className="w-full h-full object-cover"
-                width={400}
-                height={140}
               />
             ) : (
               <ImagePlaceholder />

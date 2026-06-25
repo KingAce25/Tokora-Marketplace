@@ -95,19 +95,28 @@ function useEvents(category: EventCategory, query: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setError(null);
 
-    // Replace with your real API call:
-    // fetch(`/api/events?category=${category}&q=${encodeURIComponent(query)}`)
+    // ── Swap this block for your real API call ────────────────────────────────
+    // const controller = new AbortController();
+    // const timeout = setTimeout(() => controller.abort(), 10000); // 10s hard timeout
+    // fetch(`/api/events?category=${category}&q=${encodeURIComponent(query)}`, {
+    //   signal: controller.signal,
+    // })
     //   .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
-    //   .then(data => setEvents(data.events))
-    //   .catch(e => setError(e.message))
-    //   .finally(() => setLoading(false));
+    //   .then(data => { if (!cancelled) setEvents(data.events ?? []); })
+    //   .catch(e => { if (!cancelled) setError(e.name === "AbortError" ? "Request timed out." : "Failed to load events."); })
+    //   .finally(() => { clearTimeout(timeout); if (!cancelled) setLoading(false); });
+    // return () => { cancelled = true; controller.abort(); };
+    // ──────────────────────────────────────────────────────────────────────────
 
+    // Mock: always resolves, never hangs
     const timer = setTimeout(() => {
+      if (cancelled) return;
       try {
-        let filtered = MOCK_EVENTS;
+        let filtered = [...MOCK_EVENTS];
         if (category !== "All")
           filtered = filtered.filter((e) => e.categories.includes(category));
         if (query.trim())
@@ -125,7 +134,10 @@ function useEvents(category: EventCategory, query: string) {
       }
     }, 600);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [category, query]);
 
   return { events, loading, error };
@@ -139,10 +151,10 @@ function SkeletonCard({ tall = false }: { tall?: boolean }) {
       className={`
         animate-pulse rounded-2xl overflow-hidden
         bg-[#1e1e1e] border border-white/5
-        ${tall ? "w-full" : "shrink-0 w-50"}
+        ${tall ? "w-full" : "flex-shrink-0 w-[200px]"}
       `}
     >
-      <div className={`bg-[#2a2a2a] ${tall ? "h-37.5" : "h-27.5"}`} />
+      <div className={`bg-[#2a2a2a] ${tall ? "h-[150px]" : "h-[110px]"}`} />
       <div className="p-3 space-y-2">
         <div className="h-3 bg-[#2a2a2a] rounded-full w-3/4" />
         <div className="h-2.5 bg-[#2a2a2a] rounded-full w-1/2" />
@@ -178,7 +190,9 @@ function ErrorState({
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <p className="text-[#6b6b6b] text-sm text-center max-w-55s">{message}</p>
+      <p className="text-[#6b6b6b] text-sm text-center max-w-[220px]">
+        {message}
+      </p>
       <button
         onClick={onRetry}
         className="px-5 py-2 rounded-full bg-[#FF6B2C] text-white text-sm font-semibold
@@ -259,10 +273,9 @@ export default function Home() {
   return (
     <div
       className="
-      fixed inset-0
-      w-full overflow-x-hidden overflow-y-auto
+      relative w-full
       bg-[#0f0f0f] text-white
-      pb-25
+      pb-[100px]
       font-[system-ui,-apple-system,'Helvetica_Neue',sans-serif]
       [-webkit-overflow-scrolling:touch]
     "
@@ -361,7 +374,7 @@ export default function Home() {
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="shrink-0 text-[#6b6b6b] active:scale-90 transition-transform"
+              className="flex-shrink-0 text-[#6b6b6b] active:scale-90 transition-transform"
             >
               <svg
                 width="14"
@@ -413,7 +426,7 @@ export default function Home() {
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className={`
-                shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold
+                flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold
                 transition-all duration-200 active:scale-95
                 ${
                   activeCategory === cat
